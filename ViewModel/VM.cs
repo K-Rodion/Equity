@@ -27,60 +27,10 @@ namespace Equity.ViewModel
     {
         public VM()
         {
-            DateTimes = GetDateTimes();
-
-            Draw(Equity, _lineSeriesMyEquity);
-
-            Calculate(DaysMyPL, Equity, MyEquity);
+            Initialize(MyEquity);
         }
 
         #region Fields ===================================================================================
-
-        LineSeries _lineSeriesMyEquity = new LineSeries()
-        {
-            StrokeThickness = 2,
-
-            Color = OxyColors.Green,
-
-            Title = "MyEquity",
-
-        };
-
-        LineSeries _lineSeriesEquityMoex = new LineSeries()
-        {
-            StrokeThickness = 2,
-
-            Color = OxyColors.Red,
-
-            Title = "MCFTR"
-        };
-
-        LineSeries _lineSeriesEquitySp = new LineSeries()
-        {
-            StrokeThickness = 2,
-
-            Color = OxyColors.Blue,
-
-            Title = "S&P500 Total Return"
-        };
-
-        LineSeries _lineSeriesEquityMredc = new LineSeries()
-        {
-            StrokeThickness = 2,
-
-            Color = OxyColors.DarkOrange,
-
-            Title = "MREDC Index"
-        };
-
-        LineSeries _lineSeriesEquityRueybcstr = new LineSeries()
-        {
-            StrokeThickness = 2,
-
-            Color = OxyColors.Black,
-
-            Title = "RUEYBCSTR Index"
-        };
 
         private string MyEquity = "MyEquity";
         private string RTS = "RTS";
@@ -92,33 +42,12 @@ namespace Equity.ViewModel
         private decimal RiskFreeRate;
 
         static readonly HttpClient client = new HttpClient();
-
-
+        
         #endregion
 
         #region Properties ===================================================================================
 
         public ObservableCollection<DateTime> DateTimes { get; set; } = new ObservableCollection<DateTime>();
-
-        public ObservableCollection<decimal> Equity { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> DaysMyPL { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> DaysMoexPL { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> DaysMredcPL { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> DaysRueybcstrPL { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> DaysSpPL { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> EquityMoex { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> EquityMredc { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> EquityRueybcstr { get; set; } = new ObservableCollection<decimal>();
-
-        public ObservableCollection<decimal> EquitySp { get; set; } = new ObservableCollection<decimal>();
 
         public ObservableCollection<Data> Datas { get; set; } = new ObservableCollection<Data>();
 
@@ -140,9 +69,15 @@ namespace Equity.ViewModel
             set
             {
                 _isCheckedMOEX = value;
-                HandleIsChecked(EquityMoex, DaysMoexPL, MOEX, _lineSeriesEquityMoex).ConfigureAwait(false);
+                if (_isCheckedMOEX)
+                {
+                    Initialize(MOEX).ConfigureAwait(false);
+                }
+                else
+                {
+                    DeleteEquity(MOEX).ConfigureAwait(false);
+                }
                 OnPropertyChanged(nameof(IsCheckedMOEX));
-
             }
         }
         private bool _isCheckedMOEX;
@@ -154,9 +89,15 @@ namespace Equity.ViewModel
             set
             {
                 _isCheckedMREDC = value;
-                HandleIsChecked(EquityMredc, DaysMredcPL, MREDC, _lineSeriesEquityMredc).ConfigureAwait(false);
+                if (_isCheckedMREDC)
+                {
+                    Initialize(MREDC).ConfigureAwait(false);
+                }
+                else
+                {
+                    DeleteEquity(MREDC).ConfigureAwait(false);
+                }
                 OnPropertyChanged(nameof(IsCheckedMREDC));
-
             }
         }
         private bool _isCheckedMREDC;
@@ -168,9 +109,15 @@ namespace Equity.ViewModel
             set
             {
                 _isCheckedRUEYBCSTR = value;
-                HandleIsChecked(EquityRueybcstr, DaysRueybcstrPL, RUEYBCSTR, _lineSeriesEquityRueybcstr).ConfigureAwait(false);
+                if (_isCheckedRUEYBCSTR)
+                {
+                    Initialize(RUEYBCSTR).ConfigureAwait(false);
+                }
+                else
+                {
+                    DeleteEquity(RUEYBCSTR).ConfigureAwait(false);
+                }
                 OnPropertyChanged(nameof(IsCheckedRUEYBCSTR));
-
             }
         }
         private bool _isCheckedRUEYBCSTR;
@@ -182,7 +129,14 @@ namespace Equity.ViewModel
             set
             {
                 _isCheckedSP = value;
-                HandleIsCheckedSP().ConfigureAwait(false);
+                if (_isCheckedSP)
+                {
+                    Initialize(SP).ConfigureAwait(false);
+                }
+                else
+                {
+                    DeleteEquity(SP).ConfigureAwait(false);
+                }
                 OnPropertyChanged(nameof(IsCheckedSP));
             }
         }
@@ -190,94 +144,26 @@ namespace Equity.ViewModel
 
         #endregion
 
-        #region Commands ===================================================================================
-
-
-
-        #endregion
-
         #region Methods ===================================================================================
 
-        private async Task HandleIsCheckedSP()
+        private async Task DeleteEquity(string tiker)
         {
-            if (IsCheckedSP)
+            for (int i = 0; i < Datas.Count; i++)
             {
-                await GetEquitySp();
-                Draw(EquitySp, _lineSeriesEquitySp);
-                Calculate(DaysSpPL, EquitySp, SP);
-            }
-            else
-            {
-                DeleteEquity(EquitySp, DaysSpPL, SP, _lineSeriesEquitySp);
-            }
-        }
-
-        private async Task HandleIsChecked(ObservableCollection<decimal> equityList, ObservableCollection<decimal> daysPl, string tiker, LineSeries lineSeries)
-        {
-            switch (tiker)
-            {
-                case "MCFTR":
-                    if (IsCheckedMOEX)
-                    {
-                        await GetEquityMoex(equityList, tiker, daysPl);
-                        Draw(equityList, lineSeries);
-                        Calculate(daysPl, equityList, tiker);
-                    }
-                    else
-                    {
-                        DeleteEquity(equityList, daysPl, tiker, lineSeries);
-                    }
-                    break;
-                case "MREDC":
-                    if (IsCheckedMREDC)
-                    {
-                        await GetEquityMoex(equityList, tiker, daysPl);
-                        Draw(equityList, lineSeries);
-                        Calculate(daysPl, equityList, tiker);
-                    }
-                    else
-                    {
-                        DeleteEquity(equityList, daysPl, tiker, lineSeries);
-                    }
-                    break;
-                case "RUEYBCSTR":
-                    if (IsCheckedRUEYBCSTR)
-                    {
-                        await GetEquityMoex(equityList, tiker, daysPl);
-                        Draw(equityList, lineSeries);
-                        Calculate(daysPl, equityList, tiker);
-                    }
-                    else
-                    {
-                        DeleteEquity(equityList, daysPl, tiker, lineSeries);
-                    }
-                    break;
-            }
-        }
-
-        private void DeleteEquity(ObservableCollection<decimal> equityList, ObservableCollection<decimal> daysPl,
-            string tiker, LineSeries lineSeries)
-        {
-            Model.Series.Remove(lineSeries);
-            Model.InvalidatePlot(true);
-            OnPropertyChanged(nameof(Model));
-
-            equityList.Clear();
-            daysPl.Clear();
-            lineSeries.Points.Clear();
-
-            foreach (var Data in Datas)
-            {
-                if (Data.Name == tiker)
+                if (Datas[i].Name == tiker)
                 {
-                    Datas.Remove(Data);
+                    Model.Series.Remove(Datas[i].LineSeries);
+                    Datas.Remove(Datas[i]);
                 }
             }
+            Model.InvalidatePlot(true);
+            OnPropertyChanged(nameof(Datas));
+            OnPropertyChanged(nameof(Model));
         }
 
-        private async Task GetEquityMoex(ObservableCollection<decimal> equityList, string tiker, ObservableCollection<decimal> daysPl)
+        private async Task GetEquityMoex(Data data)
         {
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), $"{tiker} .csv");
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), $"{data.Name} .csv");
 
             if (!File.Exists(filePath))
             {
@@ -293,7 +179,7 @@ namespace Equity.ViewModel
 
                 if (lines == null)
                 {
-                    MessageBox.Show($"В файле {tiker}.csv отсутствуют значения");
+                    MessageBox.Show($"В файле {data.Name}.csv отсутствуют значения");
                     return;
                 }
 
@@ -330,7 +216,7 @@ namespace Equity.ViewModel
 
                 if (missedDates.Count != 0)
                 {
-                    await FindMissedDatesMoex(missedDates, tiker);
+                    await FindMissedDatesMoex(missedDates, data.Name);
                 }
                 
                 foreach (var line in File.ReadAllLines(filePath))
@@ -358,13 +244,13 @@ namespace Equity.ViewModel
                 {
                     if (i == 0)
                     {
-                        equityList.Add(0);
-                        daysPl.Add(0);
+                        data.Equity.Add(0);
+                        data.DaysPL.Add(0);
                         continue;
                     }
 
-                    equityList.Add(Math.Round((closeMoex[i] / closeMoex[0] - 1) * 100, 2));
-                    daysPl.Add(Math.Round((closeMoex[i] / closeMoex[i-1] - 1) * 100, 2));
+                    data.Equity.Add(Math.Round((closeMoex[i] / closeMoex[0] - 1) * 100, 2));
+                    data.DaysPL.Add(Math.Round((closeMoex[i] / closeMoex[i-1] - 1) * 100, 2));
                 }
 
                 
@@ -376,7 +262,7 @@ namespace Equity.ViewModel
 
         }
 
-        private async Task GetEquitySp()
+        private async Task GetEquitySp(Data data)
         {
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), "SP500TR.csv");
 
@@ -394,7 +280,7 @@ namespace Equity.ViewModel
                 string[] lines = System.IO.File.ReadAllLines(filePath);
                 if (lines == null)
                 {
-                    MessageBox.Show("В файле MCFTR.csv отсутствуют значения");
+                    MessageBox.Show("В файле SP500TR.csv отсутствуют значения");
                     return;
                 }
 
@@ -460,13 +346,13 @@ namespace Equity.ViewModel
                 {
                     if (i == 0)
                     {
-                        EquitySp.Add(0);
-                        DaysSpPL.Add(0);
+                        data.Equity.Add(0);
+                        data.DaysPL.Add(0);
                         continue;
                     }
 
-                    EquitySp.Add(Math.Round((closeSp[i] / closeSp[0] - 1) * 100, 2));
-                    DaysSpPL.Add(Math.Round((closeSp[i] / closeSp[i-1] - 1) * 100, 2));
+                    data.Equity.Add(Math.Round((closeSp[i] / closeSp[0] - 1) * 100, 2));
+                    data.DaysPL.Add(Math.Round((closeSp[i] / closeSp[i-1] - 1) * 100, 2));
                 }
             }
             catch (Exception e)
@@ -649,13 +535,13 @@ namespace Equity.ViewModel
             }
         }
 
-        private ObservableCollection<DateTime> GetDateTimes()
+        private ObservableCollection<DateTime> GetMyEquity(Data data)
         {
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), "Equity.txt");
 
             if (!File.Exists(filePath))
             {
-                MessageBox.Show("Файл Equity.txt не найден!");
+                MessageBox.Show("Файл Equity.txt не найден! Добавьте файл в папку с программой.");
                 return null;
             }
 
@@ -698,8 +584,8 @@ namespace Equity.ViewModel
                     }
                 }
 
-                Equity.Add(0);
-                DaysMyPL.Add(0);
+                data.Equity.Add(0);
+                data.DaysPL.Add(0);
 
                 for (int i = 1; i < _depo.Count; i++)
                 {
@@ -721,8 +607,8 @@ namespace Equity.ViewModel
                     decimal _percent = ((_depo[i] - sumwithdrawal) / (_depo[0] + sumdepositing) - 1)*100;
                     decimal _percentDay = _depo[i] * 100 / (_depo[i - 1] + _cashFlow[i]) - 100;
 
-                    Equity.Add(Math.Round(_percent, 2));
-                    DaysMyPL.Add(Math.Round(_percentDay, 2));
+                    data.Equity.Add(Math.Round(_percent, 2));
+                    data.DaysPL.Add(Math.Round(_percentDay, 2));
                 }
 
                 return _dtCollection;
@@ -734,17 +620,17 @@ namespace Equity.ViewModel
             }
         }
 
-        private void Draw(ObservableCollection<decimal> equity, LineSeries _lineSeries)
+        private void Draw(Data data)
         {
-            if (DateTimes.Count == equity.Count)
+            if (DateTimes.Count == data.Equity.Count)
             {
                 for (int i = 0; i < DateTimes.Count; i++)
                 {
                     DateTime date = DateTimes[i];
                     double x = date.ToOADate();
-                    decimal y = equity[i];
+                    decimal y = data.Equity[i];
                     DataPoint point = new DataPoint(x, (double)y);
-                    _lineSeries.Points.Add(point);
+                    data.LineSeries.Points.Add(point);
                 }
 
                 var xAxis = new DateTimeAxis
@@ -769,7 +655,7 @@ namespace Equity.ViewModel
                 });
 
                 Model.Axes.Add(xAxis);
-                Model.Series.Add(_lineSeries);
+                Model.Series.Add(data.LineSeries);
                 Model.InvalidatePlot(true);
                 OnPropertyChanged(nameof(Model));
             }
@@ -777,48 +663,77 @@ namespace Equity.ViewModel
             
         }
 
-        private void Calculate(ObservableCollection<decimal> daysPl, ObservableCollection<decimal> equity, string name)
+        private async Task Initialize(string name)
         {
-            Datas.Add(new Data());
 
-            Datas[Datas.Count-1].Name = name;
+            Data data = new Data(){
+                Name = name, 
+                LineSeries = new LineSeries(){Title = name},
+                Equity = new ObservableCollection<decimal>(),
+                DaysPL = new ObservableCollection<decimal>()
+            };
+            Datas.Add(data);
 
-            Datas[Datas.Count - 1].TotalYield = equity[equity.Count - 1];
+            switch (name)
+            {
+                case "MyEquity":
+                    DateTimes = GetMyEquity(data);
+                    data.LineSeries.Color = OxyColors.Green;
+                    break;
+                case "MCFTR":
+                    await GetEquityMoex(data);
+                    data.LineSeries.Color = OxyColors.Red;
+                    break;
+                case "MREDC":
+                    await GetEquityMoex(data);
+                    data.LineSeries.Color = OxyColors.Yellow;
+                    break;
+                case "RUEYBCSTR":
+                    await GetEquityMoex(data);
+                    data.LineSeries.Color = OxyColors.Black;
+                    break;
+                case "S&P500 Total Return":
+                    await GetEquitySp(data);
+                    data.LineSeries.Color = OxyColors.Blue;
+                    break;
+            }
+
+            Draw(data);
+
+            data.TotalYield = data.Equity[data.Equity.Count - 1];
 
             decimal peak = 0m, trough = 0m, drawdown = 0m, maxDrawdown = 0m;
 
-            for (int i = 0; i < equity.Count; i++)
+            for (int i = 0; i < data.Equity.Count; i++)
             {
-                if (equity[i] > peak)
+                if (data.Equity[i] > peak)
                 {
-                    peak = equity[i];
+                    peak = data.Equity[i];
                     trough = peak;
                 }
-                else if (equity[i] < trough)
+                else if (data.Equity[i] < trough)
                 {
-                    trough = equity[i];
+                    trough = data.Equity[i];
                     drawdown = (peak - trough);
                     if (drawdown > maxDrawdown)
                         maxDrawdown = drawdown;
                 }
             }
 
-            Datas[Datas.Count - 1].MaxDrawDown = maxDrawdown;
+            data.MaxDrawDown = maxDrawdown;
 
             if (name == MyEquity || name == MOEX || name == MREDC || name == RUEYBCSTR)
             {
-                RiskFreeRate = 8;
+                RiskFreeRate = 6;
             }
             else
             {
-                RiskFreeRate = 2;
+                RiskFreeRate = 1;
             }
 
-            Datas[Datas.Count - 1].CAGR = CalcCagr(equity.Last());
-
-            Datas[Datas.Count - 1].SharpeRatio = CalcSharpeRatio(daysPl, equity.Last(), RiskFreeRate);
-
-            Datas[Datas.Count - 1].SortinoRatio = CalcSortinoRatio(daysPl, RiskFreeRate);
+            data.CAGR = CalcCagr(data.Equity.Last());
+            data.SharpeRatio = CalcSharpeRatio(data.DaysPL, data.Equity.Last(), RiskFreeRate);
+            data.SortinoRatio = CalcSortinoRatio(data.DaysPL, RiskFreeRate);
 
             if (Datas.Count == 1)
             {
@@ -826,26 +741,16 @@ namespace Equity.ViewModel
             }
             else
             {
-                Datas[Datas.Count - 1].MarketCorrelation = CalcCorrelation(daysPl);
+                data.MarketCorrelation = CalcCorrelation(data.DaysPL);
             }
 
-
+            OnPropertyChanged(nameof(Datas));
         }
 
         private decimal CalcCorrelation(ObservableCollection<decimal> rateList)
         {
-            List<decimal> rateListMyEquity = new List<decimal>();
+            ObservableCollection<decimal> rateListMyEquity = Datas[0].DaysPL;
 
-            for (int i = 0; i < Equity.Count; i++)
-            {
-                if (i == 0)
-                {
-                    rateListMyEquity.Add(Equity[i]);
-                    continue;
-                }
-
-                rateListMyEquity.Add(Equity[i] - Equity[i - 1]);
-            }
             decimal mean1 = rateList.Average();
             decimal mean2 = rateListMyEquity.Average();
 

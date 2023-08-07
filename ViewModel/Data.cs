@@ -1,5 +1,7 @@
-﻿using System;
+﻿using OxyPlot.Series;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -92,5 +94,40 @@ namespace Equity.ViewModel
         }
         private decimal _marketCorrelation;
 
+        public ObservableCollection<decimal> DaysPL
+        {
+            get => _daysPL;
+
+            set
+            {
+                _daysPL = value;
+                OnPropertyChanged(nameof(DaysPL));
+            }
+        }
+        private ObservableCollection<decimal> _daysPL;
+
+        public ObservableCollection<decimal> Equity
+        {
+            get => _equity;
+
+            set
+            {
+                _equity = value;
+                OnPropertyChanged(nameof(Equity));
+            }
+        }
+        private ObservableCollection<decimal> _equity;
+
+        public LineSeries LineSeries
+        {
+            get => _lineSeries;
+
+            set
+            {
+                _lineSeries = value;
+                OnPropertyChanged(nameof(LineSeries));
+            }
+        }
+        private LineSeries _lineSeries;
     }
 }

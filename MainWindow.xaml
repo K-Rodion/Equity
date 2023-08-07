@@ -11,7 +11,7 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="760"/>
+            <ColumnDefinition Width="780"/>
             <ColumnDefinition Width="390"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -24,7 +24,17 @@
         <DataGrid ItemsSource="{Binding Datas}"
                   HeadersVisibility="All"
                   HorizontalAlignment="Center"
-                  Margin="10">
+                  Margin="10"
+                  AutoGenerateColumns="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" />
+                <DataGridTextColumn Header="Total Yield" Binding="{Binding TotalYield}"/>
+                <DataGridTextColumn Header="CAGR" Binding="{Binding CAGR}" />
+                <DataGridTextColumn Header="Max DrawDown" Binding="{Binding MaxDrawDown}" />
+                <DataGridTextColumn Header="Sharpe Ratio" Binding="{Binding SharpeRatio}" />
+                <DataGridTextColumn Header="Sortino Ratio" Binding="{Binding SortinoRatio}" />
+                <DataGridTextColumn Header="Market Correlation" Binding="{Binding MarketCorrelation}" />
+            </DataGrid.Columns>
             <DataGrid.Resources>
                 <Style TargetType="DataGridCell">
                     <Setter Property="HorizontalAlignment" Value="Center"/>
