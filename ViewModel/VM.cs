@@ -146,7 +146,7 @@ namespace Equity.ViewModel
 
         #region Methods ===================================================================================
 
-        private async Task DeleteEquity(string tiker)
+        private async Task DeleteEquity(string tiker)// удаление объекта типа Data из коллекции и графика
         {
             for (int i = 0; i < Datas.Count; i++)
             {
@@ -161,9 +161,9 @@ namespace Equity.ViewModel
             OnPropertyChanged(nameof(Model));
         }
 
-        private async Task GetEquityMoex(Data data)
+        private async Task GetEquityMoex(Data data)// заполняет свойства Equity и DaysPL у экземпляра data с использованием API Мосбиржи
         {
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), $"{data.Name} .csv");
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), $"{data.Name} .csv");//проверяем, есть ли файл в папке с программой, если нет - создаем
 
             if (!File.Exists(filePath))
             {
@@ -185,7 +185,7 @@ namespace Equity.ViewModel
 
                 List<decimal> closeMoex = new List<decimal>();
 
-                List<DateTime> missedDates = new List<DateTime>();
+                List<DateTime> missedDates = new List<DateTime>();// в этом список попадут даты, на которые нет информации по значению индекса из файла
                 foreach (var dateTime in DateTimes)
                 {
                     bool isFound = false;
@@ -216,10 +216,10 @@ namespace Equity.ViewModel
 
                 if (missedDates.Count != 0)
                 {
-                    await FindMissedDatesMoex(missedDates, data.Name);
+                    await FindMissedDatesMoex(missedDates, data.Name);//даты, необходимые для построения графика и рассчетов, отсутствующие в файле отправляются в API биржи
                 }
                 
-                foreach (var line in File.ReadAllLines(filePath))
+                foreach (var line in File.ReadAllLines(filePath))//читаем Close на интересующие даты из файла и добавляем в свойства data
                 {
                     var parts = line.Split(';');
                     if (parts.Length != 5)
@@ -262,9 +262,9 @@ namespace Equity.ViewModel
 
         }
 
-        private async Task GetEquitySp(Data data)
+        private async Task GetEquitySp(Data data)// заполняет свойства Equity и DaysPL у экземпляра data с использованием парсинга с finance.yahoo.com
         {
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "SP500TR.csv");
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "SP500TR.csv");//проверяем, есть ли файл в папке с программой, если нет - создаем
 
             if (!File.Exists(filePath))
             {
@@ -318,10 +318,10 @@ namespace Equity.ViewModel
 
                 if (missedDates.Count != 0)
                 {
-                    await FindMissedDatesSp(missedDates);
+                    await FindMissedDatesSp(missedDates);//даты, необходимые для построения графика и рассчетов, отсутствующие в файле отправляются в метод для парсинга
                 }
 
-                foreach (var line in File.ReadAllLines(filePath))
+                foreach (var line in File.ReadAllLines(filePath))//читаем Close на интересующие даты из файла и добавляем в свойства data
                 {
                     var parts = line.Split(';');
                     if (parts.Length != 7)
@@ -367,7 +367,7 @@ namespace Equity.ViewModel
             int partedSize = 15;
             List<List<DateTime>> parted = new List<List<DateTime>>();
 
-            for (int i = 0; i < missedDates.Count; i += partedSize)
+            for (int i = 0; i < missedDates.Count; i += partedSize)//разбиваем список missedDates на листы по 15 недель, иначе при большем количестве ответ response приходит не полный
             {
                 List<DateTime> chunk = missedDates.Skip(i).Take(partedSize).ToList();
                 parted.Add(chunk);
@@ -378,7 +378,7 @@ namespace Equity.ViewModel
                 DateTime min = part.Min();
                 DateTime max = part.Max();
 
-                int iterationCount = 0;
+                int iterationCount = 0;//счетчик рекурсии метода
 
                 try
                 {
@@ -388,23 +388,23 @@ namespace Equity.ViewModel
 
                     var query = $"?from={min.AddDays(-25).ToString("yyyy-MM-dd")}&till={max.ToString("yyyy-MM-dd")}";
 
-                    var fullUrl = new Uri(url, query);
+                    var fullUrl = new Uri(url, query);//формируем и отправляем GET запрос с интересующими датами
 
-                    var response = await client.GetAsync(fullUrl);
+                    var response = await client.GetAsync(fullUrl);// получаем ответ
                     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);// регистрация провайдера кодировок, иначе csv с кодировкой windows-1251 не распознается
                     using (var reader = new StreamReader(await response.Content.ReadAsStreamAsync(), Encoding.GetEncoding("windows-1251")))
                     {
-                        string fileContent = await reader.ReadToEndAsync();
+                        string fileContent = await reader.ReadToEndAsync();//полностью считываем ответ до конца
 
                         foreach (var date in part)
                         {
-                            List<decimal> ohlc = SearchIndexForDate(date);
+                            List<decimal> ohlc = SearchIndexForDate(date);//получаем значение свеч на нужную дату
 
                             if (ohlc != null)
                             {
                                 string newLine = Environment.NewLine + $"{date:dd.MM.yyyy};{ohlc[3].ToString("0.##")};{ohlc[0].ToString("0.##")};{ohlc[1].ToString("0.##")};{ohlc[2].ToString("0.##")}";
 
-                                using (StreamWriter writer = File.AppendText(fileName))
+                                using (StreamWriter writer = File.AppendText(fileName))//записываем нужные значения в файл
                                 {
                                     writer.Write(newLine);
                                 }
@@ -414,13 +414,12 @@ namespace Equity.ViewModel
 
                         List<decimal> SearchIndexForDate(DateTime date)
                         {
-                            string pattern = @".*;" + tiker + @";" + date.ToString("yyyy-MM-dd") + @";.*;.*;(\d+\.\d+);(\d+\.\d+);(\d+\.\d+);(\d+\.\d+);";
+                            string pattern = @".*;" + tiker + @";" + date.ToString("yyyy-MM-dd") + @";.*;.*;(\d+\.\d+);(\d+\.\d+);(\d+\.\d+);(\d+\.\d+);";//регулярное выражение для поиска совпадения в строке ответа биржи
 
                             Match match = Regex.Match(fileContent, pattern);
 
-                            if (match.Success)
+                            if (match.Success)//если нужная дата найдена, записываем значения в лист
                             {
-                                // Вывести значение индекса
                                 List<decimal> ohlc = new List<decimal>();
                                 NumberFormatInfo numberFormatInfo = new NumberFormatInfo()
                                     { NumberDecimalSeparator = "." };
@@ -432,7 +431,7 @@ namespace Equity.ViewModel
 
                                 return ohlc;
                             }
-                            else
+                            else//если нужная дата не найдена, рекурсивно вызываем метод с датой-1 день
                             {
                                 if (iterationCount < 100)
                                 {
@@ -441,7 +440,7 @@ namespace Equity.ViewModel
                                 }
                                 else
                                 {
-                                    throw new Exception($"Отсутствуют значения индекса {tiker} на указанные даты");
+                                    throw new Exception($"Отсутствуют значения индекса {tiker} на указанные даты");//если метод рекурсивно вызывается больше 100 раз, во избежание переполнения стека формируем ошибку и остановку выполнения метода
                                     return null;
                                 }
                             }
@@ -455,14 +454,14 @@ namespace Equity.ViewModel
                     return;
                 }
             }
-        }
+        }//поиск значений свеч на нужную дату для индексов Мосбиржи
 
         private static async Task FindMissedDatesSp(List<DateTime> missedDates)
         {
             int partedSize = 15;
             List<List<DateTime>> parted = new List<List<DateTime>>();
 
-            for (int i = 0; i < missedDates.Count; i += partedSize)
+            for (int i = 0; i < missedDates.Count; i += partedSize)//разбиваем список missedDates на листы по 15 недель, иначе при большем количестве ответ response приходит не полный
             {
                 List<DateTime> chunk = missedDates.Skip(i).Take(partedSize).ToList();
                 parted.Add(chunk);
@@ -479,18 +478,18 @@ namespace Equity.ViewModel
                     string url =
                         $"https://finance.yahoo.com/quote/%5ESP500TR/history?period1={ToUnixTimestamp(min.AddDays(-4))}&period2={ToUnixTimestamp(max.AddDays(4))}&interval=1d&filter=history&frequency=1d";
 
-                    HttpResponseMessage response = await client.GetAsync(url);
+                    HttpResponseMessage response = await client.GetAsync(url);//формируем и отправляем http запрос с интересующими датами
                     string responseBody = await response.Content.ReadAsStringAsync();
 
                     string fileName = "SP500TR.csv";
 
                     foreach (var date in part)
                     {
-                        List<double> ohlc = SearchIndexForDate(date);
+                        List<double> ohlc = SearchIndexForDate(date);//получаем значение свеч на нужную дату
 
                         string newLine = Environment.NewLine + $"{date:dd.MM.yyyy};{ohlc[3].ToString("0.##").Replace(".", ",")};{ohlc[0].ToString("0.##").Replace(".", ",")};{ohlc[1].ToString("0.##").Replace(".", ",")};{ohlc[2].ToString("0.##").Replace(".", ",")};;";
 
-                        using (StreamWriter writer = File.AppendText(fileName))
+                        using (StreamWriter writer = File.AppendText(fileName))//записываем нужные значения в файл
                         {
                             writer.Write(newLine);
                         }
@@ -500,18 +499,17 @@ namespace Equity.ViewModel
                     {
                         return (long)(date.ToUniversalTime() - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc))
                             .TotalSeconds;
-                    }
+                    }//перевод даты в секунды для http запроса
 
                     List<double> SearchIndexForDate(DateTime date)
                     {
                         string pattern = $"<td class=\"Py\\(10px\\) Ta\\(start\\) Pend\\(10px\\)\"><span>{date.ToString("MMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US"))}" +
                                      $"</span></td><td class=\"Py\\(10px\\) Pstart\\(10px\\)\"><span>(?<open>[0-9,]+.[0-9]+)</span></td><td class=\"Py\\(10px\\) Pstart\\(10px\\)\"><span>(?<high>[0-9,]+.[0-9]+)</span></td>" +
-                                     $"<td class=\"Py\\(10px\\) Pstart\\(10px\\)\"><span>(?<low>[0-9,]+.[0-9]+)</span></td><td class=\"Py\\(10px\\) Pstart\\(10px\\)\"><span>(?<close>[0-9,]+.[0-9]+)</span></td>";
+                                     $"<td class=\"Py\\(10px\\) Pstart\\(10px\\)\"><span>(?<low>[0-9,]+.[0-9]+)</span></td><td class=\"Py\\(10px\\) Pstart\\(10px\\)\"><span>(?<close>[0-9,]+.[0-9]+)</span></td>";//регулярное выражение для поиска совпадения в строке ответа биржи
                         Match match = Regex.Match(responseBody, pattern);
 
-                        if (match.Success)
+                        if (match.Success)//если нужная дата найдена, записываем значения в лист
                         {
-                            // Вывести значение индекса
                             List<double> ohlc = new List<double>();
 
                             ohlc.Add(double.Parse(match.Groups["open"].Value, NumberStyles.Number, CultureInfo.CreateSpecificCulture("en-US")));
@@ -521,7 +519,7 @@ namespace Equity.ViewModel
 
                             return ohlc;
                         }
-                        else
+                        else//если нужная дата не найдена, рекурсивно вызываем метод с датой-1 день
                         {
                             return SearchIndexForDate(date.AddDays(-1));
                         }
@@ -533,9 +531,9 @@ namespace Equity.ViewModel
                 }
                
             }
-        }
+        }//поиск значений свеч на нужную дату для американских индексов
 
-        private ObservableCollection<DateTime> GetMyEquity(Data data)
+        private ObservableCollection<DateTime> GetMyEquity(Data data)//считываение пользовательской эквити из файла
         {
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), "Equity.txt");
 
@@ -547,8 +545,8 @@ namespace Equity.ViewModel
 
             ObservableCollection<DateTime> _dtCollection = new ObservableCollection<DateTime>();
 
-            List<decimal> _depo = new List<decimal>();
-            List<decimal> _cashFlow = new List<decimal>();
+            List<decimal> _depo = new List<decimal>();//остаток средств на конец дня
+            List<decimal> _cashFlow = new List<decimal>();//учет внесения/снятия средств
 
             try
             {
@@ -620,7 +618,7 @@ namespace Equity.ViewModel
             }
         }
 
-        private void Draw(Data data)
+        private void Draw(Data data)//отрисовка графика эквити
         {
             if (DateTimes.Count == data.Equity.Count)
             {
@@ -672,9 +670,9 @@ namespace Equity.ViewModel
                 Equity = new ObservableCollection<decimal>(),
                 DaysPL = new ObservableCollection<decimal>()
             };
-            Datas.Add(data);
+            Datas.Add(data);//создаем экземпляр класс и добалвяем в коллекцию
 
-            switch (name)
+            switch (name)//заполнение списков для построения графика и выбор цвета линии
             {
                 case "MyEquity":
                     DateTimes = GetMyEquity(data);
@@ -704,7 +702,7 @@ namespace Equity.ViewModel
 
             decimal peak = 0m, trough = 0m, drawdown = 0m, maxDrawdown = 0m;
 
-            for (int i = 0; i < data.Equity.Count; i++)
+            for (int i = 0; i < data.Equity.Count; i++)//расчет максимальной просадки
             {
                 if (data.Equity[i] > peak)
                 {
@@ -722,7 +720,7 @@ namespace Equity.ViewModel
 
             data.MaxDrawDown = maxDrawdown;
 
-            if (name == MyEquity || name == MOEX || name == MREDC || name == RUEYBCSTR)
+            if (name == MyEquity || name == MOEX || name == MREDC || name == RUEYBCSTR)//учет безрисковой ставки доходности для рублевых и долларовых индексов
             {
                 RiskFreeRate = 6;
             }
@@ -737,11 +735,11 @@ namespace Equity.ViewModel
 
             if (Datas.Count == 1)
             {
-                Datas[0].MarketCorrelation = 1;
+                Datas[0].MarketCorrelation = 1;//корреляция пользовательской эквити с самой собой 1
             }
             else
             {
-                data.MarketCorrelation = CalcCorrelation(data.DaysPL);
+                data.MarketCorrelation = CalcCorrelation(data.DaysPL);//корреляция пользовательской эквити с синдексами
             }
 
             OnPropertyChanged(nameof(Datas));

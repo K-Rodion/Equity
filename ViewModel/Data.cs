@@ -22,6 +22,9 @@ namespace Equity.ViewModel
         }
         private string _name;
 
+        /// <summary>
+        /// Доходность за период
+        /// </summary>
         public decimal TotalYield
         {
             get => Math.Round(_yield, 2);
@@ -34,6 +37,9 @@ namespace Equity.ViewModel
         }
         private decimal _yield;
 
+        /// <summary>
+        /// Cовокупный среднегодовой темп роста
+        /// </summary>
         public double CAGR
         {
             get => Math.Round(_cagr, 2);
@@ -46,6 +52,9 @@ namespace Equity.ViewModel
         }
         private double _cagr;
 
+        /// <summary>
+        /// Максимальная просадка
+        /// </summary>
         public decimal MaxDrawDown
         {
             get => Math.Round(_maxDrawDown, 2);
@@ -58,6 +67,9 @@ namespace Equity.ViewModel
         }
         private decimal _maxDrawDown;
 
+        /// <summary>
+        /// Коэффициент Шарпа
+        /// </summary>
         public decimal SharpeRatio
         {
             get => Math.Round(_sharpeRatio, 2);
@@ -70,6 +82,9 @@ namespace Equity.ViewModel
         }
         private decimal _sharpeRatio;
 
+        /// <summary>
+        /// Коэффициент Сортино
+        /// </summary>
         public decimal SortinoRatio
         {
             get => Math.Round(_sortinoRatio, 2);
@@ -82,6 +97,9 @@ namespace Equity.ViewModel
         }
         private decimal _sortinoRatio;
 
+        /// <summary>
+        /// Корреляция пользовательской доходности с бенчмарком
+        /// </summary>
         public decimal MarketCorrelation
         {
             get => Math.Round(_marketCorrelation, 2);
@@ -94,6 +112,9 @@ namespace Equity.ViewModel
         }
         private decimal _marketCorrelation;
 
+        /// <summary>
+        /// Прибыль/убыток ото дня к дню
+        /// </summary>
         public ObservableCollection<decimal> DaysPL
         {
             get => _daysPL;
@@ -106,6 +127,9 @@ namespace Equity.ViewModel
         }
         private ObservableCollection<decimal> _daysPL;
 
+        /// <summary>
+        /// Прибыль/убыток по отношению к первому дню
+        /// </summary>
         public ObservableCollection<decimal> Equity
         {
             get => _equity;
